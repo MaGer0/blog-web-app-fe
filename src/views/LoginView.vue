@@ -3,7 +3,7 @@
     class="w-full min-h-screen bg-linear-65 from-[#00bf8f] to-[#001510] flex justify-center items-center"
   >
     <div class="bg-white rounded-3xl shadow-lg py-12 px-16 max-w-md w-full">
-      <form class="flex flex-col items-center justify-center">
+      <form class="flex flex-col items-center justify-center" @submit.prevent="login">
         <div class="flex flex-col items-center mb-8">
           <div class="font-extrabold text-[#1D1616] text-xl">Sign In</div>
           <div class="text-[#949BA0] font-base">Please enter your details</div>
@@ -14,8 +14,10 @@
             <input
               type="email"
               id="email"
+              v-model="email"
               class="w-full border border-[#949BA0] rounded-lg px-4 py-3 focus:outline-none focus:border-[#00bf8f]"
               placeholder="Enter your email"
+              autocomplete="email"
             />
           </div>
           <div class="">
@@ -23,8 +25,10 @@
             <input
               type="password"
               id="password"
+              v-model="password"
               class="w-full border border-[#949BA0] rounded-lg px-4 py-3 focus:outline-none focus:border-[#00bf8f]"
               placeholder="Enter password"
+              autocomplete="current-password"
             />
           </div>
         </div>
@@ -52,6 +56,26 @@ import { onMounted, ref } from 'vue'
 const email = ref('')
 const password = ref('')
 
+function login() {
+  fetch('http://127.0.0.1:8000/api/login', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: email.value,
+      password: password.value,
+    }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      localStorage.setItem('token', data.token)
+      // this.$router.push({ path: '/'})
+    })
+    .catch((err) => console.log(err))
+}
+
 // Fungsi ini akan men-decode JWT dari Google
 function decodeJWT(token) {
   let base64Url = token.split('.')[1]
@@ -67,8 +91,7 @@ function decodeJWT(token) {
   return JSON.parse(jsonPayload)
 }
 
-// Fungsi untuk menangani response login Google
-function handleGoogleCredentialResponse(response) {
+function googleLogin(response) {
   const jwt = response.credential
   const user = decodeJWT(jwt)
 
@@ -106,7 +129,7 @@ onMounted(() => {
   if (window.google) {
     google.accounts.id.initialize({
       client_id: '404358982388-kiio8f745uc7ljr0erq0bh8dgvg7vao9.apps.googleusercontent.com',
-      callback: handleGoogleCredentialResponse,
+      callback: googleLogin,
     })
 
     google.accounts.id.renderButton(document.getElementById('g_id_signin'), {
